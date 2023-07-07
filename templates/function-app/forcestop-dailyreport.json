@@ -1,0 +1,303 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subscriptionId": {
+      "type": "string"
+    },
+    "functionAppName": {
+      "type": "string"
+    },
+    "location": {
+      "defaultValue": "[resourceGroup().location]",
+      "type": "string"
+    },
+    "appServicePlanName": {
+      "type": "string"
+    },
+    "appServicePlanResourceGroupName": {
+      "type": "string"
+    },
+    "resourceGroupName": {
+      "type": "string"
+    },
+    "alwaysOn": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "use32BitWorkerProcess": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "storageAccountName": {
+      "type": "string"
+    },
+    "CC": {
+      "type": "string",
+      "defaultValue": "'[\"cc1@example.com\", \"cc2@example.com\", \"cc3@example.com\" ]'",
+      "metadata": {
+        "description": "Carbon Copy (CC) of the email"
+      }
+    },
+    "ClientCode": {
+      "type": "string",
+      "metadata": {
+        "description": "CloudSwyft Client Code"
+      }
+    },
+    "ClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "App Registration Applciation Id"
+      }
+    },
+    "ClientKey": {
+      "type": "string",
+      "metadata": {
+        "description": "App Registration Applciation Key"
+      }
+    },
+    "ClientName": {
+      "type": "string",
+      "metadata": {
+        "description": "CloudSwyft Client Name"
+      }
+    },
+    "CRON_TIME": {
+      "type": "string",
+      "defaultValue": "0 0 0,3 * * *",
+      "metadata": {
+        "description": "CRON time for forceshutdown"
+      }
+    },
+    "DAILY_REPORT_CRON_TIME": {
+      "type": "string",
+      "defaultValue": "0 0 1 * * *",
+      "metadata": {
+        "description": "CRON time for daily report"
+      }
+    },
+    "FROM": {
+      "type": "string",
+      "defaultValue": "no-reply@example.com",
+      "metadata": {
+        "description": "Sender of the force shutdown email."
+      }
+    },
+    "FROM_DAILYREPORT_EMAIL": {
+      "type": "string",
+      "defaultValue": "no-reply@example.com",
+      "metadata": {
+        "description": "Sender of the daily report email."
+      }
+    },
+    "LabsDataBase": {
+      "type": "string",
+      "metadata": {
+        "description": "Database"
+      }
+    },
+    "LabsDataServer": {
+      "type": "string",
+      "metadata": {
+        "description": "Database Server"
+      }
+    },
+    "LabsPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Database Password"
+      }
+    },
+    "LabsUserId": {
+      "type": "string",
+      "metadata": {
+        "description": "Database User"
+      }
+    },
+    "SendGridKey": {
+      "type": "string",
+      "metadata": {
+        "description": "SendGrid Key"
+      }
+    },
+    "SendGridName": {
+      "type": "string",
+      "metadata": {
+        "description": "SendGrid Name"
+      }
+    },
+    "TO": {
+      "type": "string",
+      "defaultValue": "'[\"to1@example.com\", \"to2@example.com\", \"to3@example.com\" ]'",
+      "metadata": {
+        "description": "Recipient(s) of the email"
+      }
+    },
+    "WEBSITE_TIME_ZONE": {
+      "type": "string",
+      "defaultValue": "Singapore Standard Time",
+      "allowedValues": [
+        "Singapore Standard Time"
+      ]
+    },
+    "TenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Tenant Id"
+      }
+    }
+  },
+  "variables": {
+
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-11-01",
+      "name": "[parameters('functionAppName')]",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp",
+      "location": "[parameters('location')]",
+      "tags": {
+        "hidden-link: /app-insights-resource-id": "[concat('/subscriptions/', parameters('subscriptionId'),'/resourceGroups/', parameters('resourceGroupName'),'/providers/Microsoft.Insights/components/', parameters('functionAppName'))]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "name": "[parameters('functionAppName')]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(concat('microsoft.insights/components/', parameters('functionAppName')), '2015-05-01').InstrumentationKey]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(concat('microsoft.insights/components/', parameters('functionAppName')), '2015-05-01').ConnectionString]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+            },
+            {
+              "name": "CC",
+              "value": "[parameters('CC')]"
+            },
+            {
+              "name": "ClientCode",
+              "value": "[parameters('ClientCode')]"
+            },
+            {
+              "name": "ClientId",
+              "value": "[parameters('ClientId')]"
+            },
+            {
+              "name": "ClientKey",
+              "value": "[parameters('ClientKey')]"
+            },
+            {
+              "name": "ClientName",
+              "value": "[parameters('ClientName')]"
+            },
+            {
+              "name": "CRON_TIME",
+              "value": "[parameters('CRON_TIME')]"
+            },
+            {
+              "name": "DAILY_REPORT_CRON_TIME",
+              "value": "[parameters('DAILY_REPORT_CRON_TIME')]"
+            },
+            {
+              "name": "DiagnosticServices_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "FROM",
+              "value": "[parameters('FROM')]"
+            },
+            {
+              "name": "FROM_DAILYREPORT_EMAIL",
+              "value": "[parameters('FROM_DAILYREPORT_EMAIL')]"
+            },
+            {
+              "name": "LabsDataBase",
+              "value": "[parameters('LabsDataBase')]"
+            },
+            {
+              "name": "LabsDataServer",
+              "value": "[parameters('LabsDataServer')]"
+            },
+            {
+              "name": "LabsPassword",
+              "value": "[parameters('LabsPassword')]"
+            },
+            {
+              "name": "LabsUserId",
+              "value": "[parameters('LabsUserId')]"
+            },
+            {
+              "name": "SendGridKey",
+              "value": "[parameters('SendGridKey')]"
+            },
+            {
+              "name": "SendGridName",
+              "value": "[parameters('SendGridName')]"
+            },
+            {
+              "name": "SubscriptionId",
+              "value": "[parameters('subscriptionId')]"
+            },
+            {
+              "name": "TenantId",
+              "value": "[parameters('TenantId')]"
+            },
+            {
+              "name": "TO",
+              "value": "[parameters('TO')]"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            },
+            {
+              "name": "WEBSITE_TIME_ZONE",
+              "value": "[parameters('WEBSITE_TIME_ZONE')]"
+            }
+          ],
+          "cors": {
+            "allowedOrigins": [
+              "https://portal.azure.com"
+            ]
+          },
+          "use32BitWorkerProcess": "[parameters('use32BitWorkerProcess')]",
+          "alwaysOn": "[parameters('alwaysOn')]"
+        },
+        "serverFarmId": "[concat('/subscriptions/', parameters('subscriptionId'),'/resourcegroups/', parameters('appServicePlanResourceGroupName'), '/providers/Microsoft.Web/serverfarms/', parameters('appServicePlanName'))]",
+        "clientAffinityEnabled": false
+      }
+    },
+    {
+      "apiVersion": "2019-06-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "tags": {},
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2"
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "defaultValue": "web"
+    },
+    "location": {
+      "type": "string"
+    },
+    "tagsArray": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "requestSource": {
+      "type": "string",
+      "defaultValue": "IbizaAIExtension"
+    },
+    "subscriptionId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "workspaceResourceId": {
+      "value": "[concat('/subscriptions/', parameters('subscriptionId'),'/resourcegroups/defaultresourcegroup-', resourceGroup().location,'/providers/microsoft.operationalinsights/workspaces/defaultworkspace-', parameters('subscriptionId'),'-', resourceGroup().location)]"
+    }
+  },
+  "resources": [
+    {
+      "name": "[parameters('name')]",
+      "type": "microsoft.insights/components",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tagsArray')]",
+      "apiVersion": "2020-02-02-preview",
+      "dependsOn": [
+        "newWorkspaceTemplate"
+      ],
+      "properties": {
+        "ApplicationId": "[parameters('name')]",
+        "Application_Type": "[parameters('type')]",
+        "Flow_Type": "Redfield",
+        "Request_Source": "[parameters('requestSource')]",
+        "WorkspaceResourceId": "[variables('workspaceResourceId')]"
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "newWorkspaceTemplate",
+      "resourceGroup": "[concat('DefaultResourceGroup-', resourceGroup().location)]",
+      "subscriptionId": "[parameters('subscriptionId')]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "apiVersion": "2020-08-01",
+              "name": "[concat('DefaultWorkspace-', parameters('subscriptionId'),'-', resourceGroup().location)]",
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "location": "[parameters('location')]",
+              "properties": {}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
